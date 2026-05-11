@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 # get token
 import os
 
+# get most recent user id
+from .db_helpers import retrieve_last_user_id
+
 # get token from .env
 
 # load .env

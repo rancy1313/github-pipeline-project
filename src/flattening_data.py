@@ -145,6 +145,7 @@ def flatten_repo_issues_dictionaries(issue, repo_id):
     # labels and assignees are repeated nested structures, so JSONB preserves them
     issue["labels_json"] = Json(issue.get("labels") or [])
     issue["assignees_json"] = Json(issue.get("assignees") or [])
+    issue["milestone_json"] = Json(issue.get("milestone") or [])
 
     # remove dicts from issue
     issue.pop("user", None)
@@ -159,6 +160,7 @@ def flatten_repo_issues_dictionaries(issue, repo_id):
     issue.pop("closed_by", None)
     issue.pop("labels", None)
     issue.pop("assignees", None)
+    issue.pop("milestone", None)
 
 # rename cols to avoid naming issues ( SQL keywords) when creating staging table
 def normalize_data_columns(data, rename_map):
