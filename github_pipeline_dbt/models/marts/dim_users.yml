@@ -1,0 +1,19 @@
+models:
+  - name: dim_users
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null
+
+      - name: login
+        tests:
+          - not_null
+
+      - name: user_type
+        tests:
+          - not_null
+
+      - name: site_admin
+        tests:
+          - not_null
