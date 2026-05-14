@@ -1,0 +1,15 @@
+models:
+  - name: fact_issues
+    columns:
+      - name: issue_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repos')
+                field: repo_id

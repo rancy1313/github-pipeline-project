@@ -1,0 +1,14 @@
+models:
+  - name: fact_commits
+    columns:
+      - name: sha
+        data_tests:
+          - not_null
+
+      - name: repo_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_repos')
+                field: repo_id

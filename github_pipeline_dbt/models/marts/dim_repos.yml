@@ -2,10 +2,17 @@ models:
   - name: dim_repos
     columns:
       - name: repo_id
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: repo_name
-        tests:
+        data_tests:
           - not_null
+
+      - name: owner_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_users')
+                field: user_id

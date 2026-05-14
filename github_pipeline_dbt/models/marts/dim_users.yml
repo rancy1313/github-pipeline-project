@@ -2,18 +2,18 @@ models:
   - name: dim_users
     columns:
       - name: user_id
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: login
-        tests:
+        data_tests:
           - not_null
 
       - name: user_type
-        tests:
+        data_tests:
           - not_null
 
       - name: site_admin
-        tests:
+        data_tests:
           - not_null
