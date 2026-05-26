@@ -14,7 +14,7 @@ SELECT
 	git_author_date,
 	git_committer_name,
 	git_committer_email,
-	git_committer_date,
+	git_committer_date::TIMESTAMPTZ,
 	
 	author_login,
 	author_id,
@@ -36,6 +36,6 @@ SELECT
 	
 	parent_shas
 
-	html_url,
+	html_url
 	
 FROM {{ ref('stg_commits')}}
