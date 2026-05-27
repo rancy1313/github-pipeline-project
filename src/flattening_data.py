@@ -105,7 +105,6 @@ def flatten_repo_issues_dictionaries(issue, repo_id):
 
     # to flatten dicts in labels list
     issue_labels = []
-    assignees = issue.get("assignees") or []
 
     # set user id/repo id
     issue["user_id"] = user.get("id")

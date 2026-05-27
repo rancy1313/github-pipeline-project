@@ -52,6 +52,5 @@ rename_issues_map = {
     "comments": "issue_comments",
     "number": "issue_number",
     "locked": "issue_locked",
-    "state": "issue_state",
-    "assignees": "assignees_json"
+    "state": "issue_state"
 }
