@@ -159,7 +159,7 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
     sql_query = """
         SELECT
             login
-        FROM dim_users
+        FROM users
     """
 
     cur.execute(sql_query)
@@ -173,7 +173,7 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
     sql_query = """
         SELECT
             repo_id
-        FROM dim_repos
+        FROM repos
     """
 
     cur.execute(sql_query)
@@ -189,7 +189,7 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
         	SELECT
         		repo_id,
         		COUNT(*) AS commits_count
-        	FROM fact_commits
+        	FROM commits
         	GROUP BY repo_id
         )
         
@@ -207,7 +207,7 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
         	SELECT
         		repo_id,
         		COUNT(*) AS issues_count
-        	FROM fact_issues
+        	FROM issues
         	GROUP BY repo_id
         )
         
