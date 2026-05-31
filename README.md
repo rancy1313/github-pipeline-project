@@ -17,6 +17,16 @@ The project focuses on:
 
 ---
 
+# Notebook Preview
+
+If GitHub has issues rendering the notebook preview, use the HTML export instead:
+
+```text
+https://htmlpreview.github.io/?https://github.com/rancy1313/github-pipeline-project/blob/main/github_pipeline.html
+```
+
+---
+
 # Tech Stack
 
 ## Languages
@@ -188,16 +198,6 @@ Additional incremental repository ingestion for first 60 users ingested:
 Repos:   244
 Commits: 3659
 Issues:  155
-```
-
----
-
-# Notebook Preview
-
-If GitHub has issues rendering the notebook preview, use the HTML export instead:
-
-```text
-https://htmlpreview.github.io/?https://github.com/rancy1313/github-pipeline-project/blob/main/github_pipeline.html
 ```
 
 ---
