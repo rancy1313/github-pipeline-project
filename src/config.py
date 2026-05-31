@@ -54,3 +54,18 @@ rename_issues_map = {
     "locked": "issue_locked",
     "state": "issue_state"
 }
+
+# vars to pass in the pipeline
+pipeline_config = {
+    # env vars passed to ensure they exits late (sanity check)
+    "TOKEN": TOKEN,
+    "DB_NAME": DB_NAME,
+    "PASSWORD": PASSWORD,
+
+    # pipeline vars
+    "headers": headers,
+    "rename_users_map": rename_users_map,
+    "rename_repos_map": rename_repos_map,
+    "rename_commits_map": rename_commits_map,
+    "rename_issues_map": rename_issues_map,
+}

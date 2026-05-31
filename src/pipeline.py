@@ -12,7 +12,7 @@ from src.api_helpers import (
 )
 
 # main pipeline to ingest more users/repos/commits/issues
-def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map, rename_issues_map, most_recent_user_id):
+def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map, rename_issues_map, most_recent_user_id, **kwargs):
 
     # pipeline vars
 
@@ -56,6 +56,11 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
             # returns a dict per user
             user_data = get_data(endpoint, headers)
 
+            # every user should have data but add sanity check
+            if not user_data:
+                print(f"Warning: user {login} has no user data")
+                continue
+
             # rename user data cols
             normalize_data_columns(user_data, rename_users_map)
 
@@ -69,6 +74,10 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
 
             # returns a list
             repo_data = get_data(endpoint, headers)
+
+            # if current user has no repos
+            if not repo_data:
+                continue
             
             # for each repo get the commits/issues for that repo
             for repo in repo_data:
@@ -91,15 +100,18 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
                 # returns a list
                 commit_data = get_data(endpoint, headers)
 
-                # flatten the dictionaries in each commit
-                for row in commit_data:
-            
-                    flatten_repo_commit_dictionaries(row, repo_id)
-
-                    # rename commits data cols
-                    normalize_data_columns(row, rename_commits_map)
-
-                all_commits_data.extend(commit_data)
+                # ensure not []/none
+                if commit_data:
+                    
+                    # flatten the dictionaries in each commit
+                    for row in commit_data:
+                
+                        flatten_repo_commit_dictionaries(row, repo_id)
+    
+                        # rename commits data cols
+                        normalize_data_columns(row, rename_commits_map)
+    
+                    all_commits_data.extend(commit_data)
 
                 # this section is to ingest issues data
                 
@@ -112,16 +124,19 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
                     # returns list
                     issue_data = get_data(endpoint, headers)
 
-                    # flatten the dictionaries in each issue 
-                    for row in issue_data:
+                    # ensure not []/none
+                    if issue_data:
                         
-                        flatten_repo_issues_dictionaries(row, repo_id)
-
-                        # rename commits data cols
-                        normalize_data_columns(row, rename_issues_map)
+                        # flatten the dictionaries in each issue 
+                        for row in issue_data:
+                            
+                            flatten_repo_issues_dictionaries(row, repo_id)
     
-                    # add issue data to all issues data
-                    all_issues_data.extend(issue_data)
+                            # rename commits data cols
+                            normalize_data_columns(row, rename_issues_map)
+        
+                        # add issue data to all issues data
+                        all_issues_data.extend(issue_data)
 
             # extend repos data list to include repo data
             all_repos_data.extend(repo_data)
@@ -240,7 +255,7 @@ def get_repos_data(num, conn, headers, rename_repos_map, rename_commits_map, ren
 
             # if call returns nothing then break for current user
             # likely no more repos exist
-            if repo_data == []:
+            if not repo_data:
                 break
     
             # for each repo we will check to see if it exists in our db
@@ -267,16 +282,19 @@ def get_repos_data(num, conn, headers, rename_repos_map, rename_commits_map, ren
     
                     # returns a list
                     commit_data = get_data(endpoint, headers)
+
+                    # ensure not []/none
+                    if commit_data:
     
-                    # flatten the dictionaries in each commit
-                    for row in commit_data:
-                
-                        flatten_repo_commit_dictionaries(row, repo_id)
-    
-                        # rename commits data cols
-                        normalize_data_columns(row, rename_commits_map)
-    
-                    commits_data.extend(commit_data)
+                        # flatten the dictionaries in each commit
+                        for row in commit_data:
+                    
+                            flatten_repo_commit_dictionaries(row, repo_id)
+        
+                            # rename commits data cols
+                            normalize_data_columns(row, rename_commits_map)
+        
+                        commits_data.extend(commit_data)
     
                     # this section is to ingest issues data
                     
@@ -288,17 +306,20 @@ def get_repos_data(num, conn, headers, rename_repos_map, rename_commits_map, ren
     
                         # returns list
                         issue_data = get_data(endpoint, headers)
+
+                        # ensure not []/none
+                        if issue_data:
     
-                        # flatten the dictionaries in each issue 
-                        for row in issue_data:
-                            
-                            flatten_repo_issues_dictionaries(row, repo_id)
-    
-                            # rename commits data cols
-                            normalize_data_columns(row, rename_issues_map)
+                            # flatten the dictionaries in each issue 
+                            for row in issue_data:
+                                
+                                flatten_repo_issues_dictionaries(row, repo_id)
         
-                        # add issue data to all issues data
-                        issues_data.extend(issue_data)
+                                # rename commits data cols
+                                normalize_data_columns(row, rename_issues_map)
+            
+                            # add issue data to all issues data
+                            issues_data.extend(issue_data)
     
                     # append repo 
                     repos_data.append(repo)
@@ -385,7 +406,7 @@ def get_commits_data(num, conn, headers, rename_commits_map, **kwargs):
             endpoint = f"/repos/{login}/{repo_name}/commits?per_page={commits_length}&page={page}"
             commits_data = get_data(endpoint, headers)
 
-            # if [] break to reduce calls
+            # if []/none break to reduce calls
             if not commits_data:
                 break
             
@@ -421,3 +442,107 @@ def get_commits_data(num, conn, headers, rename_commits_map, **kwargs):
     cur.close()
 
     return all_commits_data
+
+# this function gets more issues for existing repos
+def get_issues_data(num, conn, headers, rename_issues_map, **kwargs):
+
+    # page size
+    issues_per_page = 100
+
+    # used to store all saved issues
+    all_issues_data = []
+
+    # max pages to search through
+    max_pages = 3
+
+    cur = conn.cursor()
+
+    # variables used to request data from issues endpoint
+    sql_query = """
+        SELECT 
+            U.login,
+            R.repo_name,
+            R.repo_id,
+            R.has_issues
+        FROM users U
+        INNER JOIN repos R
+        ON U.user_id = R.owner_id
+    """
+
+    cur.execute(sql_query)
+    
+    # get list of issue ids already saved in the db
+    issues_endpoint_vars = cur.fetchall()
+
+    sql_query = """
+        SELECT
+            issue_id
+        FROM issues
+    """
+
+    cur.execute(sql_query)
+
+    issues_ids = cur.fetchall()
+
+    cur.close()
+
+    # set for O(1) search
+    issues_ids = {issue_id[0] for issue_id in issues_ids}
+
+    for cur_tuple in issues_endpoint_vars:
+
+        # unpack tuple
+        login = cur_tuple[0]
+        repo_name = cur_tuple[1]
+        repo_id = cur_tuple[2]
+        has_issues = cur_tuple[3]
+
+        # we will only fetch data from API if the repo has issues
+        if has_issues:
+
+            saved_issue_counter = 0
+
+            page = 1
+
+            while saved_issue_counter < num:
+        
+                endpoint = f"/repos/{login}/{repo_name}/issues?per_page={issues_per_page}&page={page}"
+
+                issues_data = get_data(endpoint, headers)
+
+                # if empty/none liekly no more issues
+                if not issues_data:
+                    break
+
+                # for each requested issue check if it is not already in the DB 
+                # if new issue then transform and append to saved issues
+                for row in issues_data:
+                    
+                    if row["id"] not in issues_ids:
+
+                        # flatten nested dicts
+                        flatten_repo_issues_dictionaries(row, repo_id)
+                        
+                        # rename cols to avoid them having DB keywords as names
+                        normalize_data_columns(row, rename_issues_map)
+
+                        all_issues_data.append(row)
+
+                        # add to issues_id to avoid dupes (sanity check)
+                        issues_ids.add(row["issue_id"])
+
+                        # increment saved issues and check if max issues for current users reached
+                        saved_issue_counter += 1
+
+                        if saved_issue_counter == num:
+                            break
+
+                # increment page
+                page += 1
+
+                # break if max pages searched
+                if page > max_pages:
+                    print(f"Warning: Max pages reached for {login} and {repo_name}")
+                    break
+
+    return all_issues_data
