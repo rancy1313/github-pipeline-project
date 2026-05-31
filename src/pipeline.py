@@ -137,7 +137,7 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
 # num number of repos
 # commits/issues ingested matches max length for existing repos to ensure consistent sizes
 # **kwargs for unused vars
-def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, rename_commits_map, rename_issues_map, **kwargs):
+def get_repos_data(num, conn, headers, rename_repos_map, rename_commits_map, rename_issues_map, **kwargs):
 
     # init lists to store data
     repos_data = []
@@ -242,14 +242,6 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
             # likely no more repos exist
             if repo_data == []:
                 break
-
-            # increment page
-            page += 1
-
-            # safety check break loop if max pages reached
-            if page == max_pages:
-                print(f"Error: Max pages reached for {login}")
-                break
     
             # for each repo we will check to see if it exists in our db
             for repo in repo_data:
@@ -318,6 +310,114 @@ def get_repos_data(num, conn, headers, rename_users_map, rename_repos_map, renam
                     # for this function call is reached and break out of current iteration
                     if repo_insertion_counter == num:
                         break
+
+            # increment page
+            page += 1
+
+            # safety check break loop if max pages reached 
+            if page > max_pages:
+                print(f"Warning: Max pages reached for {login}")
+                break
     
     # return data for insertion
     return repos_data, commits_data, issues_data
+
+# function to ingest more commits for existing repos
+def get_commits_data(num, conn, headers, rename_commits_map, **kwargs):
+
+    # page size
+    commits_length = 100
+
+    # max pages to search through 5
+    max_pages = 5
+
+    # collect new commits
+    all_commits_data = []
+
+    cur = conn.cursor() 
+
+    # get the user login and repo name to fetch commits for existing repos
+    sql_query = """
+        SELECT
+        	U.login,
+        	R.repo_name,
+            R.repo_id
+        FROM users U
+        INNER JOIN repos R
+        ON U.user_id = R.owner_id
+    """
+
+    cur.execute(sql_query)
+
+    commits_endpoint_vars = cur.fetchall()
+    
+    # get the commits 'id' (sha) to avoid saving duplicate commits
+    sql_query = """
+        SELECT
+            sha
+        FROM commits
+    """
+
+    cur.execute(sql_query)
+
+    commits_sha = cur.fetchall()
+
+    # set for 0(1) search
+    commits_sha = {sha[0] for sha in commits_sha}
+
+    for cur_tuple in commits_endpoint_vars:
+
+        # keep track of how many commits are currenlty saved
+        saved_commits_counter = 0
+        
+        # unpack tuple
+        login = cur_tuple[0]
+        repo_name = cur_tuple[1]
+        repo_id = cur_tuple[2]
+
+        # init page 1
+        page = 1
+
+        # if saved_commits_counter equals num then the number of new commits for current repo is reached
+        while saved_commits_counter < num:
+        
+            # get commits data for current user/repo
+            endpoint = f"/repos/{login}/{repo_name}/commits?per_page={commits_length}&page={page}"
+            commits_data = get_data(endpoint, headers)
+
+            # if [] break to reduce calls
+            if not commits_data:
+                break
+            
+            for row in commits_data:
+    
+                # only flatten/rename cols/ and save commit if it is a new commit (not already in the DB)
+                if row['sha'] not in commits_sha:
+    
+                    flatten_repo_commit_dictionaries(row, repo_id)
+    
+                    # rename commits data cols
+                    normalize_data_columns(row, rename_commits_map)
+                    
+                    all_commits_data.append(row)
+    
+                    saved_commits_counter += 1
+                    
+                    # there shouldn't be dupe commits
+                    commits_sha.add(row["sha"])
+
+                    # break out of current commit data loop
+                    if saved_commits_counter == num:
+                        break
+
+            # increment page
+            page += 1
+
+            # safety check break loop if max pages reached 
+            if page > max_pages:
+                print(f"Warning: Max pages reached for {login} and {repo_name}")
+                break
+        
+    cur.close()
+
+    return all_commits_data
