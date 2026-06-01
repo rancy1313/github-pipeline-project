@@ -1,6 +1,7 @@
 {{ config(materialized='table') }}
 
 SELECT
+    issue_creator_id,
     issue_id,
     issue_number,
     repo_id,

@@ -8,6 +8,7 @@
 --	issue_dependencies_summary_blocking,
 --	issue_dependencies_summary_total_blocking,
 SELECT
+	user_id AS issue_creator_id,
 	url,
 	repository_url,
 	labels_url,
