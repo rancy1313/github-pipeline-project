@@ -1,0 +1,22 @@
+models:
+  - name: int_issue_assignees
+    columns:
+      - name: issue_id
+        data_tests:
+          - not_null
+          - relationship:
+              arguments:
+                to: ref('fact_issues')
+                field: issue_id
+
+      - name: assignee_id
+        data_tests:
+          - not_null
+
+    # issue_id and assignee_id are both not unique so a combination of both is used as the composite PK
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - issue_id
+              - assignee_id
