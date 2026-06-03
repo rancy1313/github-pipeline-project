@@ -1,0 +1,18 @@
+models:
+  - name: repo_summary_mart
+    columns:
+      - name: repo_id
+        data_tests:
+          - unique
+          - not_null
+
+      - name: repo_name
+        data_tests:
+          - not_null
+
+      - name: owner_id
+        data_tests:
+          - relationship:
+              arguments:
+                to: ref('dim_users')
+                field: user_id
