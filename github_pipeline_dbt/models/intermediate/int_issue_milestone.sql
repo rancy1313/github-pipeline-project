@@ -1,0 +1,41 @@
+{{ config(materialized='table') }}
+
+SELECT
+        issue_id,
+	(milestone_json ->> 'id')::BIGINT AS milestone_id,
+	milestone_json ->> 'url' AS milestone_url,
+	milestone_json ->> 'state' AS milestone_state,
+	milestone_json ->> 'description' AS milestone_description,
+	(milestone_json ->> 'updated_at')::TIMESTAMPTZ AS milestone_updated_at,
+	(milestone_json ->> 'due_on')::TIMESTAMPTZ AS milestone_due_on,
+	milestone_json ->> 'html_url' AS milestone_html_url,
+	milestone_json ->> 'node_id' AS milestone_node_id,
+	(milestone_json ->> 'closed_issues')::INTEGER AS milestone_closed_issues,
+	milestone_json ->> 'title' AS milestone_title,
+	(milestone_json ->> 'open_issues')::INTEGER AS milestone_open_issues,
+	(milestone_json ->> 'number')::INTEGER AS milestone_number,
+	milestone_json ->> 'labels_url' AS milestone_labels_url,
+	(milestone_json ->> 'created_at')::TIMESTAMPTZ AS milestone_created_at,
+	(milestone_json ->> 'closed_at')::TIMESTAMPTZ AS milestone_closed_at,
+	-- unnest creator in same table
+	(milestone_json -> 'creator' ->> 'id')::BIGINT AS milestone_creator_id,
+	milestone_json -> 'creator' ->> 'avatar_url' AS milestone_creator_avatar_url,
+	(milestone_json -> 'creator' ->> 'site_admin')::BOOLEAN AS milestone_creator_site_admin,
+	milestone_json -> 'creator' ->> 'following_url' AS milestone_creator_following_url,
+	milestone_json -> 'creator' ->> 'organizations_url' AS milestone_creator_organizations_url,
+	milestone_json -> 'creator' ->> 'user_view_type' AS milestone_creator_user_view_type,
+	milestone_json -> 'creator' ->> 'followers_url' AS milestone_creator_followers_url,
+	milestone_json -> 'creator' ->> 'html_url' AS milestone_creator_html_url,
+	milestone_json -> 'creator' ->> 'type' AS milestone_creator_type,
+	milestone_json -> 'creator' ->> 'node_id' AS milestone_creator_node_id,
+	milestone_json -> 'creator' ->> 'received_events_url' AS milestone_creator_received_events_url,
+	milestone_json -> 'creator' ->> 'gravatar_id' AS milestone_creator_gravatar_id,
+	milestone_json -> 'creator' ->> 'login' AS milestone_creator_login,
+	milestone_json -> 'creator' ->> 'gists_url' AS milestone_creator_gists_url,
+	milestone_json -> 'creator' ->> 'subscriptions_url' AS milestone_creator_subscriptions_url,
+	milestone_json -> 'creator' ->> 'repos_url' AS milestone_creator_repos_url,
+	milestone_json -> 'creator' ->> 'starred_url' AS milestone_creator_starred_url,
+	milestone_json -> 'creator' ->> 'url' AS milestone_creator_url,
+	milestone_json -> 'creator' ->> 'events_url' AS milestone_creator_events_url
+FROM {{ ref('fact_issues') }}
+WHERE milestone_json IS NOT NULL

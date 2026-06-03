@@ -1,0 +1,15 @@
+models:
+  - name: int_issue_milestone
+    columns:
+      - name: issue_id
+        data_tests:
+          - unique
+          - not_null
+          - relationship:
+              arguments:
+                to: ref('fact_issues')
+                field: issue_id
+
+      - name: milestone_id
+        data_tests:
+          - not_null

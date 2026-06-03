@@ -144,7 +144,12 @@ def flatten_repo_issues_dictionaries(issue, repo_id):
     # labels and assignees are repeated nested structures, so JSONB preserves them
     issue["labels_json"] = Json(issue.get("labels") or [])
     issue["assignees_json"] = Json(issue.get("assignees") or [])
-    issue["milestone_json"] = Json(issue.get("milestone") or [])
+
+    # return None if None to avoid Json(None) -> null 
+    if issue.get("milestone") is not None:
+        issue["milestone_json"] = Json(issue["milestone"])
+    else:
+        issue["milestone_json"] = None            
 
     # remove dicts from issue
     issue.pop("user", None)
