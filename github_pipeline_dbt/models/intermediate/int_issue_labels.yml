@@ -4,7 +4,7 @@ models:
       - name: issue_id
         data_tests:
           - not_null
-          - relationship:
+          - relationships:
               arguments:
                 to: ref('fact_issues')
                 field: issue_id

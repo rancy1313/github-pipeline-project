@@ -10,9 +10,9 @@ models:
         data_tests:
           - not_null
 
-      - name: owner_id
+      - name: repo_owner_id
         data_tests:
-          - relationship:
+          - relationships:
               arguments:
                 to: ref('dim_users')
                 field: user_id
