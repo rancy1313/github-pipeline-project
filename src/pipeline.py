@@ -20,10 +20,10 @@ def run_pipeline(headers, rename_users_map, rename_repos_map, rename_commits_map
     pages = 3
 
     # pagination size
-    users_per_page = 20
-    repos_per_page = 10
-    commits_per_page = 20
-    issues_per_page = 20
+    users_per_page = 15
+    repos_per_page = 5
+    commits_per_page = 15
+    issues_per_page = 15
     
     # store user/repos/commits/issues data
     all_users_data = []

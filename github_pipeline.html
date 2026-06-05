@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=45c3749d-a4bd-4853-863e-b3b3325e26ea">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ea480863-097e-4d37-9978-8d4f50bb6577">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7809,16 +7809,37 @@ a.anchor-link {
 <li>loads raw data into PostgreSQL staging tables</li>
 <li>transforms data using dbt</li>
 <li>supports incremental ingestion</li>
+<li>uploads data to datawarehouse for analytics (BigQuery)</li>
 </ul>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fa43fcf8-9708-4adc-9098-4c960ae03d7f">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0190daa5-f5b5-4d11-9dce-33629bfd0c5d">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Pipeline-Setup">Pipeline Setup<a class="anchor-link" href="#Pipeline-Setup">¶</a></h2><p>This section imports the Python modules and configuration needed to run the GitHub API pipeline.</p>
+<p>The notebook uses helper functions from the <code>src/</code> folder to:</p>
+<ul>
+<li>connect to the GitHub REST API</li>
+<li>transform nested API responses</li>
+<li>load raw data into PostgreSQL staging tables</li>
+<li>track API call volume</li>
+<li>optionally upload modeled tables to BigQuery</li>
+</ul>
+<p>Sensitive values such as the GitHub token, database password, and BigQuery credentials are loaded from local configuration files and are not committed to GitHub.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=514fc70f-d098-4302-acf0-e492d64b77f4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># imports</span>
@@ -7872,7 +7893,28 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a87fba4a-5dab-4b86-9419-4758605b4232">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d3830b20-47d6-4e79-a61b-c518f17176b2">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Configuration-Management">Configuration Management<a class="anchor-link" href="#Configuration-Management">¶</a></h2><p>Project configuration is centralized in <code>src/config.py</code>.</p>
+<p>The configuration module:</p>
+<ul>
+<li>loads environment variables from a local <code>.env</code> file</li>
+<li>retrieves the GitHub API token</li>
+<li>retrieves PostgreSQL connection information</li>
+<li>defines request headers for authenticated API calls</li>
+<li>stores column renaming mappings used to standardize GitHub REST API responses</li>
+<li>creates a shared configuration dictionary that is passed throughout the pipeline</li>
+</ul>
+<p>This approach keeps sensitive credentials separate from source code and allows pipeline settings to be managed from a single location.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=1918c8dc-14b4-43ea-a737-9198acea381d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7918,7 +7960,38 @@ most_recent_user_id exists: True
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7e975d1d-0c72-49af-a767-25da9e6f526c">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8d15acd3-5b6b-4244-8f1f-e0f2e1d6eb07">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Initial-GitHub-API-Ingestion">Initial GitHub API Ingestion<a class="anchor-link" href="#Initial-GitHub-API-Ingestion">¶</a></h2><p>The main pipeline performs an incremental extraction from the GitHub REST API.</p>
+<p>For each batch of users:</p>
+<ol>
+<li>Retrieves user records using the GitHub <code>/users</code> endpoint.</li>
+<li>Retrieves detailed user profile information.</li>
+<li>Retrieves repositories owned by each user.</li>
+<li>Retrieves commit history for each repository.</li>
+<li>Retrieves issue data for repositories with issues enabled.</li>
+<li>Flattens nested API responses into a relational structure.</li>
+<li>Standardizes column names using predefined mapping dictionaries.</li>
+<li>Stores the processed data in Python lists for loading into PostgreSQL.</li>
+</ol>
+<p>The pipeline uses GitHub's <code>since</code> pagination parameter to support incremental ingestion, allowing only users with IDs greater than the most recently ingested user to be retrieved.</p>
+<p>After extraction, the data is loaded into PostgreSQL staging tables:</p>
+<ul>
+<li><code>users</code></li>
+<li><code>repos</code></li>
+<li><code>commits</code></li>
+<li><code>issues</code></li>
+</ul>
+<p>API call counts are tracked throughout the process to monitor rate-limit usage and ingestion efficiency.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=967ea9ef-d3d9-49c7-a189-f993a21db6aa">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7929,41 +8002,7 @@ most_recent_user_id exists: True
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># fetch data</span>
 <span class="n">all_users_data</span><span class="p">,</span> <span class="n">all_repos_data</span><span class="p">,</span> <span class="n">all_commits_data</span><span class="p">,</span> <span class="n">all_issues_data</span> <span class="o">=</span> <span class="n">run_pipeline</span><span class="p">(</span><span class="o">**</span><span class="n">pipeline_config</span><span class="p">)</span>
 
-<span class="c1"># data size</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of users:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_users_data</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of repos:"</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">all_repos_data</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of commits:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_commits_data</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of issues:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_issues_data</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Number of users: 60
-Number of repos: 561
-Number of commits: 8404
-Number of issues: 244
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=3662f67c-95f4-4031-889c-153ba9047bab">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># connect to postgres DB</span>
+<span class="c1"># connect to postgres DB</span>
 <span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dbname=</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2"> user=postgres password=</span><span class="si">{</span><span class="n">PASSWORD</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># insert data into staging tables</span>
@@ -7971,6 +8010,12 @@ Number of issues: 244
 <span class="n">table_insertion</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">'repos'</span><span class="p">,</span> <span class="n">all_repos_data</span><span class="p">)</span>
 <span class="n">table_insertion</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">'commits'</span><span class="p">,</span> <span class="n">all_commits_data</span><span class="p">)</span>
 <span class="n">table_insertion</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">'issues'</span><span class="p">,</span> <span class="n">all_issues_data</span><span class="p">)</span>
+
+<span class="c1"># data size</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of users:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_users_data</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of repos:"</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">all_repos_data</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of commits:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_commits_data</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Number of issues:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_issues_data</span><span class="p">))</span>
 
 <span class="c1"># get current calls to subtract from next print call</span>
 <span class="n">main_pipeline_calls</span> <span class="o">=</span> <span class="n">print_api_call_count</span><span class="p">()</span>
@@ -7989,18 +8034,43 @@ Number of issues: 244
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Total API calls: 964
+<pre>Number of users: 45
+Number of repos: 204
+Number of commits: 2267
+Number of issues: 193
+Total API calls: 412
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=5c628add-c497-4d93-bd8f-d2670cd0cf52">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a6dcf5d8-f612-4098-b6d1-6b6490219779">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Additional-Repository-Ingestion">Additional Repository Ingestion<a class="anchor-link" href="#Additional-Repository-Ingestion">¶</a></h2><p>The initial pipeline collects a limited number of repositories per user to control API usage and ingestion time.</p>
+<p>This step expands the dataset by retrieving additional repositories for users that already exist in the database.</p>
+<p>The process:</p>
+<ol>
+<li>Retrieves existing GitHub usernames from PostgreSQL.</li>
+<li>Retrieves existing repository IDs to avoid duplicate ingestion.</li>
+<li>Requests additional repositories for each user through the GitHub REST API.</li>
+<li>Collects commit and issue data for newly identified repositories.</li>
+<li>Loads the new records into the PostgreSQL staging tables.</li>
+</ol>
+<p>Pagination, repository limits, and duplicate checks are used to control API consumption while allowing the dataset to grow incrementally over time.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e6829466-d6b1-462f-9bee-b80e77f7f69d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dbname=</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2"> user=postgres password=</span><span class="si">{</span><span class="n">PASSWORD</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -8034,21 +8104,44 @@ Number of issues: 244
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Number of repos: 494
-Number of commits: 8260
-Number of issues: 248
-Total API calls: 874
+<pre>Number of repos: 195
+Number of commits: 2197
+Number of issues: 116
+Total API calls: 349
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d21a0be6-d4b2-4d5e-9377-e7401684c258">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d05ab64e-fe1d-486e-951c-7282c9346952">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Additional-Commit-Ingestion">Additional Commit Ingestion<a class="anchor-link" href="#Additional-Commit-Ingestion">¶</a></h2><p>This step expands commit history for repositories that already exist in the database.</p>
+<p>The initial pipeline limits the number of commits collected per repository to control API usage and runtime. This function allows the project to retrieve additional commit records later without reloading the full dataset.</p>
+<p>The process:</p>
+<ol>
+<li>Retrieves existing repository endpoint values from PostgreSQL, including owner login, repository name, and repository ID.</li>
+<li>Retrieves existing commit SHAs from the database to prevent duplicate ingestion.</li>
+<li>Requests additional commits from the GitHub REST API for each existing repository.</li>
+<li>Uses pagination to search through multiple commit pages when needed.</li>
+<li>Keeps only commits that do not already exist in the database.</li>
+<li>Flattens nested commit objects and standardizes column names.</li>
+<li>Loads the newly collected commit records into the PostgreSQL staging table.</li>
+</ol>
+<p>Commit SHA values are used for deduplication because they uniquely identify Git commit objects. API call counts are tracked to monitor the cost of expanding commit history.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a03fccab-942e-4d1f-9146-02d97f05e7d3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dbname=</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2"> user=postgres password=</span><span class="si">{</span><span class="n">PASSWORD</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -8076,24 +8169,47 @@ Total API calls: 874
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Number of commits: 3136
-Total API calls: 2620
+<pre>Number of commits: 675
+Total API calls: 572
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b61a2542-bb74-4ec4-a1c5-2ed5efa6eac4">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=55be6be3-0aa3-4cf0-8a7f-c1a1283d7291">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Additional-Issue-Ingestion">Additional Issue Ingestion<a class="anchor-link" href="#Additional-Issue-Ingestion">¶</a></h2><p>This step expands issue history for repositories that already exist in the database.</p>
+<p>The initial pipeline collects a limited number of issues per repository to reduce API consumption and ingestion time. This function allows additional issue records to be collected later without reprocessing previously ingested data.</p>
+<p>The process:</p>
+<ol>
+<li>Retrieves existing repository information from PostgreSQL, including owner login, repository name, repository ID, and issue availability.</li>
+<li>Retrieves existing issue IDs from the database to prevent duplicate ingestion.</li>
+<li>Requests additional issue records from the GitHub REST API for repositories with issues enabled.</li>
+<li>Uses pagination to search through multiple issue pages when necessary.</li>
+<li>Keeps only issues that do not already exist in the database.</li>
+<li>Flattens nested issue objects and standardizes column names.</li>
+<li>Loads the newly collected issue records into the PostgreSQL staging table.</li>
+</ol>
+<p>Issue IDs are used for deduplication to ensure that previously ingested issues are not reloaded. Pagination limits and maximum page thresholds are used to control API usage while allowing issue history to grow incrementally over time.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=18d88d95-c299-4aef-a4c5-d5ee4425b667">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dbname=</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2"> user=postgres password=</span><span class="si">{</span><span class="n">PASSWORD</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-<span class="n">issues_data</span> <span class="o">=</span> <span class="n">get_issues_data</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="o">**</span><span class="n">pipeline_config</span><span class="p">)</span>
+<span class="n">issues_data</span> <span class="o">=</span> <span class="n">get_issues_data</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="o">**</span><span class="n">pipeline_config</span><span class="p">)</span>
 
 <span class="c1"># insert into staging tables</span>
 <span class="n">table_insertion</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">'issues'</span><span class="p">,</span> <span class="n">issues_data</span><span class="p">)</span>
@@ -8115,19 +8231,38 @@ Total API calls: 2620
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Number of issues: 134
-Total API calls: 1099
+<pre>Number of issues: 47
+Total API calls: 272
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9456745a-8d23-4a55-a883-355270d18f4b">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=932451bd-4959-4577-b11f-749d3a26c56d">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="API-Usage-Summary">API Usage Summary<a class="anchor-link" href="#API-Usage-Summary">¶</a></h2><p>The pipeline tracks GitHub REST API consumption across each ingestion stage.</p>
+<p>This summary provides visibility into the total number of API requests required to:</p>
+<ul>
+<li>ingest new users</li>
+<li>ingest additional repositories</li>
+<li>ingest additional commits</li>
+<li>ingest additional issues</li>
+</ul>
+<p>Monitoring API usage helps evaluate pipeline efficiency and ensures the project remains within GitHub rate limits.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=924c8e29-eedc-4818-a2dc-578f97aae59c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"Total Notebook API Calls:"</span><span class="p">,</span> <span class="n">main_pipeline_calls</span> <span class="o">+</span> <span class="n">repo_calls</span> <span class="o">+</span> <span class="n">commit_calls</span> <span class="o">+</span> <span class="n">issue_calls</span><span class="p">)</span>
@@ -8143,25 +8278,51 @@ Total API calls: 1099
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Total Notebook API Calls: 5557
+<pre>Total Notebook API Calls: 1605
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=505cbacf-067b-406b-beea-055f46bc08ee">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=52832fad-d4cf-4874-a47f-f3fe07739a61">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="dbt-Transformation-Step">dbt Transformation Step<a class="anchor-link" href="#dbt-Transformation-Step">¶</a></h2><p>After loading raw data into PostgreSQL staging tables, dbt is run from the terminal to build staging models, fact/dimension models, intermediate JSON bridge tables, and the repository summary mart.</p>
+<div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>github_pipeline_dbt
+dbt<span class="w"> </span>run<span class="w"> </span>
+dbt<span class="w"> </span><span class="nb">test</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f6bf872d-8c0e-4655-891f-f824d64a92c6">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Optional-BigQuery-Upload">Optional BigQuery Upload<a class="anchor-link" href="#Optional-BigQuery-Upload">¶</a></h2><p>This step syncs modeled PostgreSQL tables to BigQuery for cloud analytics and Power BI reporting. It requires a local service account key stored outside version control.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a090ddcf-948b-4778-acd7-a8897057986b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># upload to BigQuery</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">bigquery</span><span class="o">.</span><span class="n">Client</span><span class="o">.</span><span class="n">from_service_account_json</span><span class="p">(</span><span class="s2">"secrets/bigquery_credentials.json"</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">bigquery</span><span class="o">.</span><span class="n">Client</span><span class="o">.</span><span class="n">from_service_account_json</span><span class="p">(</span><span class="s2">"secrets/bigquery_credentials.json"</span><span class="p">)</span>
 
 <span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dbname=</span><span class="si">{</span><span class="n">DB_NAME</span><span class="si">}</span><span class="s2"> user=postgres password=</span><span class="si">{</span><span class="n">PASSWORD</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="c1"># commit after each transaction</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">autocommit</span> <span class="o">=</span> <span class="kc">True</span>
 
 <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"repo_summary_mart"</span><span class="p">,</span>
@@ -8189,20 +8350,42 @@ Total API calls: 1099
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Loaded repo_summary_mart: 203 rows
-Loaded dim_users: 120 rows
-Loaded dim_repos: 1829 rows
-Loaded fact_commits: 32439 rows
-Loaded fact_issues: 1204 rows
-Loaded int_issue_assignees: 38 rows
-Loaded int_issue_labels: 357 rows
-Loaded int_issue_milestone: 33 rows
+<pre>Loaded repo_summary_mart: 56 rows
+Loaded dim_users: 45 rows
+Loaded dim_repos: 399 rows
+Loaded fact_commits: 5139 rows
+Loaded fact_issues: 356 rows
+Loaded int_issue_assignees: 2 rows
+Loaded int_issue_labels: 42 rows
+Loaded int_issue_milestone: 0 rows
 </pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a0be0ef4-7fca-4c0e-8530-0fbf87c1ac49">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=dcfae4e7-b58b-413d-92cc-7edea1667858">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Example Output</span>
+<span class="c1"># Loaded repo_summary_mart: 203 rows</span>
+<span class="c1"># Loaded dim_users: 120 rows</span>
+<span class="c1"># Loaded dim_repos: 1829 rows</span>
+<span class="c1"># Loaded fact_commits: 32439 rows</span>
+<span class="c1"># Loaded fact_issues: 1204 rows</span>
+<span class="c1"># Loaded int_issue_assignees: 38 rows</span>
+<span class="c1"># Loaded int_issue_labels: 357 rows</span>
+<span class="c1"># Loaded int_issue_milestone: 33 rows</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f8629194-c28f-41cd-b22c-c9eaeb09d6f8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
